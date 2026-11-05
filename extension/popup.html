@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tintpane</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header class="brand">
+        <img src="icons/tintpane-128.png" width="44" height="44" alt="">
+        <div>
+          <h1>Tintpane</h1>
+          <p>PWA 窗口配色</p>
+        </div>
+      </header>
+
+      <div class="panel settings">
+        <section aria-label="网站设置">
+          <label class="preference-row" for="enabled">
+            <span>
+              <span id="enabled-label">启用此网站</span>
+              <span id="site-name">正在读取当前网站…</span>
+            </span>
+            <input class="switch" id="enabled" type="checkbox" role="switch"
+              aria-labelledby="enabled-label" aria-describedby="site-name" disabled>
+          </label>
+          <label class="preference-row" for="window-state-enabled">
+            <span>区分活动与非活动窗口</span>
+            <input class="switch" id="window-state-enabled" type="checkbox" role="switch" disabled>
+          </label>
+        </section>
+        <fieldset class="mode-panel">
+          <legend>颜色模式</legend>
+          <div class="mode-switch">
+            <label class="mode-option">
+              <input type="radio" name="theme-mode" value="system" checked disabled>
+              <span>跟随系统</span>
+            </label>
+            <label class="mode-option">
+              <input type="radio" name="theme-mode" value="fixed" disabled>
+              <span>固定颜色</span>
+            </label>
+          </div>
+        </fieldset>
+      </div>
+
+      <section id="system-colors" class="panel palette-grid" aria-label="系统配色">
+        <div class="palette" role="group" aria-labelledby="light-title">
+          <h2 id="light-title">浅色</h2>
+          <label class="color-row" for="light-active-color">
+            <span id="light-active-label">统一颜色</span>
+            <input id="light-active-color" type="color" value="#ffffff" disabled>
+          </label>
+          <label class="color-row window-state-specific hidden" for="light-inactive-color">
+            <span>非活动窗口</span>
+            <input id="light-inactive-color" type="color" value="#d3d3d3" disabled>
+          </label>
+        </div>
+        <div class="palette" role="group" aria-labelledby="dark-title">
+          <h2 id="dark-title">深色</h2>
+          <label class="color-row" for="dark-active-color">
+            <span id="dark-active-label">统一颜色</span>
+            <input id="dark-active-color" type="color" value="#202124" disabled>
+          </label>
+          <label class="color-row window-state-specific hidden" for="dark-inactive-color">
+            <span>非活动窗口</span>
+            <input id="dark-inactive-color" type="color" value="#303134" disabled>
+          </label>
+        </div>
+      </section>
+
+      <section id="fixed-colors" class="panel palette hidden" aria-label="固定配色">
+        <label class="color-row" for="active-color">
+          <span id="active-label">统一颜色</span>
+          <input id="active-color" type="color" value="#ffffff" disabled>
+        </label>
+        <label class="color-row window-state-specific hidden" for="inactive-color">
+          <span>非活动窗口</span>
+          <input id="inactive-color" type="color" value="#d3d3d3" disabled>
+        </label>
+      </section>
+
+      <footer>
+        <p id="appearance" class="hidden"></p>
+        <p id="status" role="status"></p>
+      </footer>
+    </main>
+    <script src="siteConfig.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
