@@ -1,14 +1,43 @@
-# Tintpane
+<p align="center">
+  <img src="extension/icons/tintpane.svg" width="88" alt="Tintpane 图标" />
+</p>
 
-Tintpane 是一个 Chromium 扩展，为已启用网站的 PWA 标题栏设置颜色。弹窗使用 Chromium 的浅色和深色配色。网站默认关闭，普通浏览器标签页不处理颜色。
+<h1 align="center">Tintpane</h1>
+
+<p align="center">为已启用网站的 Chromium PWA 独立窗口自动同步标题栏配色的 Manifest V3 扩展。</p>
+
+<p align="center">
+  <a href="https://github.com/xxkingstuggle/tintpane/releases/latest"><img src="https://img.shields.io/github/v/release/xxkingstuggle/tintpane" alt="最新版本" /></a>
+  <img src="https://img.shields.io/badge/Chrome-Manifest_V3-4285F4?logo=googlechrome&logoColor=white" alt="Chrome Manifest V3" />
+  <img src="https://img.shields.io/badge/Zero_Dependencies-Vanilla_JS-F7DF1E?logo=javascript&logoColor=black" alt="零外部构建依赖" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/xxkingstuggle/tintpane/releases/latest">下载 Release (v2.4.0)</a> ·
+  <a href="https://myzjx.com/software/tintpane/">项目概览</a> ·
+  <a href="https://myzjx.com/posts/tintpane-chromium-pwa-theme-engine/">工程手记</a> ·
+  <a href="CHANGELOG.md">更新日志</a>
+</p>
+
+## 解决什么问题
+
+许多 Web 应用安装为 Chromium 独立窗口（PWA）后，没有随系统浅色/深色外观或窗口焦点状态切换 `<meta name="theme-color">`，导致 macOS / Windows 下的 PWA 标题栏长期刺眼或与页面主题脱节。Tintpane 采用**默认关闭、按域名显式启用**的设计，只对 `standalone` / `minimal-ui` / `window-controls-overlay` 窗口着色，绝不干扰普通浏览器标签页。
+
+| 核心机制 | 行为说明 |
+|---|---|
+| 按需动态注册脚本 | 后台仅对用户显式启用的主机名调用 `chrome.scripting.registerContentScripts`，无启用项时零内容脚本驻留 |
+| 仅限 PWA 窗口生效 | 页面脚本先检测 `display-mode`，普通浏览器标签页或单纯全屏标签页立即退出，不读取配置、不挂载监听器 |
+| 跟随系统与焦点区分 | 支持 `prefers-color-scheme` 实时切换浅色/深色标题栏，可选为活动窗口（Focused）与非活动窗口（Blurred）分别指定配色 |
+| 域名树继承与别名同步 | 支持子域名继承父域设置、子域显式关闭覆盖父域，以及 `notebook.google` ⇄ `notebook.google.com` 双向别名同步 |
+| 无损所有权恢复 | 停用时仅恢复仍由扩展持有的 `theme-color` 节点修改，不覆盖站点自身后续改写的新值 |
 
 ## 在 Chrome 中加载
 
-1. 打开 `chrome://extensions`，启用“开发者模式”。
-2. 点击“加载未打包的扩展程序”。
-3. 选择仓库中的 `extension/` 目录。
+1. 从 [GitHub Releases (v2.4.0)](https://github.com/xxkingstuggle/tintpane/releases/tag/v2.4.0) 下载 `Tintpane-2.4.0.zip` 并解压（或直接克隆本仓库使用 `extension/` 目录）。
+2. 打开 `chrome://extensions`，启用右上角“开发者模式”。
+3. 点击“加载已解压的扩展程序”，选择含有 `manifest.json` 的目录。
 
-扩展无需构建步骤或额外依赖。也可以从 GitHub Releases 下载 ZIP，解压后选择含有 `manifest.json` 的目录。已有旧版的用户可在原目录替换扩展文件，然后在扩展管理页重新加载以沿用设置。
+扩展无需构建步骤或额外依赖。已有旧版的用户可在原目录替换扩展文件，然后在扩展管理页点击“重新加载”以沿用 `chrome.storage.sync` 中的设置。
 
 ## 设置的匹配方式
 
