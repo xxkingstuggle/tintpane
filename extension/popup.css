@@ -221,16 +221,16 @@ h1, h2, p { margin: 0; }
 .mock-titlebar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-height: 29px;
-  padding: 0 9px;
-  transition: background-color 140ms ease, color 140ms ease;
+  padding: 0 8px;
+  transition: background-color 80ms ease, color 80ms ease;
 }
 
 .traffic-lights {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   flex: none;
 }
 
@@ -275,10 +275,10 @@ h1, h2, p { margin: 0; }
 
 .contrast-chip {
   flex: none;
-  padding: 1.5px 6px;
+  padding: 1.5px 5.5px;
   border-radius: 999px;
   font-family: var(--mono);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 600;
   letter-spacing: -.01em;
   background: rgb(0 0 0 / 9%);
@@ -691,18 +691,18 @@ input[type="color"]::-webkit-color-swatch {
   height: 7px;
   border-right: 1.5px solid var(--secondary);
   border-bottom: 1.5px solid var(--secondary);
-  transform: rotate(45deg);
+  transform: translateY(-1.5px) rotate(45deg);
   transition: transform 140ms ease;
 }
 
 .sites-panel[open] .chevron {
-  transform: rotate(225deg);
+  transform: translateY(2px) rotate(225deg);
 }
 
 .sites-list {
   display: grid;
   border-top: 1px solid var(--edge);
-  max-height: 170px;
+  max-height: 204px;
   overflow-y: auto;
 }
 
@@ -718,7 +718,7 @@ input[type="color"]::-webkit-color-swatch {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 11px;
+  padding: 6.5px 11px;
 }
 
 .site-item + .site-item {
@@ -825,10 +825,14 @@ footer {
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: Canvas;
-    --surface: color-mix(in srgb, Canvas 94%, CanvasText);
-    --surface-subtle: color-mix(in srgb, Canvas 90%, CanvasText);
-    --track: color-mix(in srgb, Canvas 85%, CanvasText);
+    --background: #14161A;
+    --surface: #1C1F25;
+    --surface-subtle: #23272F;
+    --edge: rgb(255 255 255 / 10%);
+    --track: #262A33;
+    --control-edge: rgb(255 255 255 / 22%);
+    --rim: rgb(255 255 255 / 6%);
+    --shadow: rgb(0 0 0 / 32%);
     --accent: #3B9EFF;
     --success: #34D399;
     --warning: #FBBF24;

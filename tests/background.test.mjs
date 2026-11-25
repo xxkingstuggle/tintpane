@@ -9,10 +9,9 @@ const currentDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionDir = path.resolve(currentDir, '../extension');
 const backgroundSource = fs.readFileSync(path.join(extensionDir, 'background.js'), 'utf8');
 
-async function flushMicrotasks(rounds = 12) {
-  for (let step = 0; step < rounds; step += 1) {
-    await Promise.resolve();
-  }
+async function drainAsyncQueue() {
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
 }
 
 function createBackgroundHarness({
@@ -75,7 +74,10 @@ function createBackgroundHarness({
         registeredScripts = registeredScripts.filter((entry) => !idSet.has(entry.id));
       },
       async executeScript(details) {
-        executedScripts.push(details);
+        executedScripts.push({
+          ...details,
+          files: Array.isArray(details.files) ? [...details.files] : undefined
+        });
         if (typeof details.func === 'function') {
           return [{ result: pwaTabIds.has(details.target.tabId) }];
         }
@@ -155,7 +157,7 @@ function createBackgroundHarness({
     for (const listener of storageListeners) {
       listener(changes, areaName);
     }
-    await flushMicrotasks();
+    await drainAsyncQueue();
   }
 
   async function emitWindowFocus(windowId) {
@@ -165,7 +167,7 @@ function createBackgroundHarness({
     for (const listener of focusListeners) {
       listener(windowId);
     }
-    await flushMicrotasks();
+    await drainAsyncQueue();
   }
 
   function sendRuntimeMessage(message, sender) {
@@ -199,7 +201,7 @@ test('reconcileRegistrations registers CONTENT_FILES for domains/localhost/IPv4 
       { id: 'third-party-script', matches: ['https://other.test/*'], js: ['other.js'], runAt: 'document_idle', persistAcrossSessions: true }
     ]
   });
-  await flushMicrotasks();
+  await drainAsyncQueue();
 
   const registered = harness.getRegisteredScripts();
   assert.equal(registered.length, 4);
@@ -228,7 +230,7 @@ test('child disable overrides parent enable and removing override dynamically in
     pwaTabIds: new Set([10]),
     mountedTabIds: new Set()
   });
-  await flushMicrotasks();
+  await drainAsyncQueue();
 
   const initialResolved = await harness.sendRuntimeMessage(
     { type: 'colorfulPwaGetResolvedConfig' },
@@ -264,7 +266,7 @@ test('windows.onFocusChanged verifies focus and broadcasts active/inactive trans
     ],
     mountedTabIds: new Set([1, 2, 3])
   });
-  await flushMicrotasks();
+  await drainAsyncQueue();
 
   await harness.emitWindowFocus(2);
   const focusMessages = harness.sentTabMessages.filter((item) => item.payload.type === 'colorfulPwaWindowFocusChanged');
@@ -284,7 +286,7 @@ test('bursts of storage.onChanged updates coalesce cleanly through the serialize
     tabs: [{ id: 5, windowId: 1, active: true, url: 'https://example.com/' }],
     mountedTabIds: new Set([5])
   });
-  await flushMicrotasks();
+  await drainAsyncQueue();
 
   const firstBurst = harness.emitStorageChange({
     'example.com': { newValue: { enabled: true, themeMode: 'fixed', activeColor: '#111111' } }

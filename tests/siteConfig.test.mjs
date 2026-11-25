@@ -46,12 +46,12 @@ test('isIPv4 and isIPv6 validate network literals accurately', () => {
 
 test('getAncestorHostnames avoids splitting IPv4/IPv6/localhost and skips common 2-label public suffixes', () => {
   const { api } = loadSiteConfig();
-  assert.deepEqual(api.getAncestorHostnames('a.b.example.com'), ['b.example.com', 'example.com']);
-  assert.deepEqual(api.getAncestorHostnames('127.0.0.1'), []);
-  assert.deepEqual(api.getAncestorHostnames('[::1]'), []);
-  assert.deepEqual(api.getAncestorHostnames('localhost'), []);
-  assert.deepEqual(api.getAncestorHostnames('app.service.co.uk'), ['service.co.uk']);
-  assert.deepEqual(api.getAncestorHostnames('docs.team.com.cn'), ['team.com.cn']);
+  assert.deepEqual([...api.getAncestorHostnames('a.b.example.com')], ['b.example.com', 'example.com']);
+  assert.deepEqual([...api.getAncestorHostnames('127.0.0.1')], []);
+  assert.deepEqual([...api.getAncestorHostnames('[::1]')], []);
+  assert.deepEqual([...api.getAncestorHostnames('localhost')], []);
+  assert.deepEqual([...api.getAncestorHostnames('app.service.co.uk')], ['service.co.uk']);
+  assert.deepEqual([...api.getAncestorHostnames('docs.team.com.cn')], ['team.com.cn']);
 });
 
 test('Notebook alias helpers map roots and subdomains symmetrically without false suffix matches', () => {
@@ -61,8 +61,8 @@ test('Notebook alias helpers map roots and subdomains symmetrically without fals
   assert.equal(api.getAliasHostname('foo.notebook.google'), 'foo.notebook.google.com');
   assert.equal(api.getAliasHostname('foo.notebook.google.com'), 'foo.notebook.google');
   assert.equal(api.getAliasHostname('notebook.google.evil'), null);
-  assert.deepEqual(api.getWriteKeys('foo.notebook.google'), ['foo.notebook.google', 'foo.notebook.google.com']);
-  assert.deepEqual(api.getWriteKeys('docs.example.com'), ['docs.example.com']);
+  assert.deepEqual([...api.getWriteKeys('foo.notebook.google')], ['foo.notebook.google', 'foo.notebook.google.com']);
+  assert.deepEqual([...api.getWriteKeys('docs.example.com')], ['docs.example.com']);
 });
 
 test('resolveConfigWithMeta reports exact override, alias, inherited, and inheritedFallback accurately', () => {
@@ -163,13 +163,13 @@ test('getEnabledRegistrationHosts and getStoredSiteEntries filter invalid hosts 
   };
 
   assert.deepEqual(
-    api.getEnabledRegistrationHosts(stored),
+    [...api.getEnabledRegistrationHosts(stored)],
     ['example.com', 'notebook.google', 'notebook.google.com']
   );
 
   const entries = api.getStoredSiteEntries(stored);
   const notebookEntries = entries.filter((entry) => entry.hostname.startsWith('notebook.google'));
   assert.equal(notebookEntries.length, 1);
-  assert.deepEqual(notebookEntries[0].removeKeys, ['notebook.google', 'notebook.google.com']);
+  assert.deepEqual([...notebookEntries[0].removeKeys], ['notebook.google', 'notebook.google.com']);
   assert.equal(entries.some((entry) => entry.hostname === 'co.uk'), false);
 });
