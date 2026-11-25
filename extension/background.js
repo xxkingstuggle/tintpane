@@ -1,10 +1,18 @@
 importScripts('siteConfig.js');
 
 const SCRIPT_ID_PREFIX = 'colorful-pwa-theme-';
-const CONTENT_FILES = ['contentScript.js'];
+const CONTENT_FILES = ['siteConfig.js', 'contentScript.js'];
 const CONFIG_MESSAGE_TYPE = 'colorfulPwaConfigChanged';
+const FOCUS_MESSAGE_TYPE = 'colorfulPwaWindowFocusChanged';
 
-const { getCandidateKeys, getEnabledRegistrationHosts, resolveConfig } = globalThis.ColorfulSiteConfig;
+const {
+  normalizeHostname,
+  isIPv4,
+  getCandidateKeys,
+  getEnabledRegistrationHosts,
+  resolveConfig,
+  normalizeConfig
+} = globalThis.ColorfulSiteConfig;
 let operationQueue = Promise.resolve();
 let storedConfigCache = null;
 let configCacheLoad = null;
@@ -12,9 +20,10 @@ let pendingChanges = {};
 let synchronizationScheduled = false;
 
 function getRegistration(hostname) {
-  const idHost = hostname.replaceAll('.', '_');
-  const isLocalOrIp = hostname === 'localhost' || /^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname);
-  const patternHost = isLocalOrIp ? hostname : `*.${hostname}`;
+  const normalized = normalizeHostname(hostname);
+  const idHost = normalized.replaceAll('.', '_');
+  const isLocalOrIp = normalized === 'localhost' || isIPv4(normalized);
+  const patternHost = isLocalOrIp ? normalized : `*.${normalized}`;
 
   return {
     id: `${SCRIPT_ID_PREFIX}${idHost}`,
@@ -74,13 +83,9 @@ async function probePwaWindow(tabId) {
   }
 }
 
-function sendResolvedConfig(tabId, hostname, config) {
+function sendTabMessage(tabId, payload) {
   return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, {
-      type: CONFIG_MESSAGE_TYPE,
-      hostname,
-      config
-    }, (response) => {
+    chrome.tabs.sendMessage(tabId, payload, (response) => {
       const failed = Boolean(chrome.runtime.lastError);
       if (response?.handled === true) resolve('handled');
       else resolve(failed ? 'missing' : 'unhandled');
@@ -88,15 +93,35 @@ function sendResolvedConfig(tabId, hostname, config) {
   });
 }
 
+async function isWindowFocused(windowId) {
+  if (typeof windowId !== 'number' || windowId === chrome.windows.WINDOW_ID_NONE) {
+    return false;
+  }
+  try {
+    const win = await chrome.windows.get(windowId);
+    return Boolean(win?.focused);
+  } catch (_error) {
+    return false;
+  }
+}
+
+function sendResolvedConfig(tabId, hostname, config, windowFocused) {
+  return sendTabMessage(tabId, {
+    type: CONFIG_MESSAGE_TYPE,
+    hostname,
+    config,
+    windowFocused
+  });
+}
+
 async function updateTab(tab, hostname, config) {
   if (typeof tab.id !== 'number') return;
 
-  const messageStatus = await sendResolvedConfig(tab.id, hostname, config);
+  const normalizedHost = normalizeHostname(hostname);
+  const windowFocused = await isWindowFocused(tab.windowId);
+  const messageStatus = await sendResolvedConfig(tab.id, normalizedHost, config, windowFocused);
   if (messageStatus === 'handled' || messageStatus === 'unhandled') return;
 
-  // No listener means this PWA was opened before the site was enabled, or a
-  // disabled controller has disposed itself. An unhandled receiver may be an
-  // older controller; avoid stacking a new one on that document.
   if (config?.enabled !== true || !(await probePwaWindow(tab.id))) return;
   try {
     await chrome.scripting.executeScript({
@@ -104,12 +129,16 @@ async function updateTab(tab, hostname, config) {
       files: CONTENT_FILES
     });
   } catch (_error) {
-    // Restricted pages and tabs that navigated during the update are skipped.
+    return;
   }
 }
 
 async function notifyAffectedTabs(stored, changedKeys) {
   if (changedKeys.size === 0) return;
+  const normalizedChangedKeys = new Set(
+    [...changedKeys].map((key) => normalizeHostname(key)).filter(Boolean)
+  );
+  if (normalizedChangedKeys.size === 0) return;
   const tabs = await chrome.tabs.query({});
   const updates = [];
 
@@ -123,13 +152,52 @@ async function notifyAffectedTabs(stored, changedKeys) {
     }
     if (!['http:', 'https:'].includes(url.protocol)) continue;
 
-    const candidateKeys = getCandidateKeys(url.hostname);
-    if (!candidateKeys.some((key) => changedKeys.has(key))) continue;
-    const config = resolveConfig(url.hostname, stored);
-    updates.push(updateTab(tab, url.hostname, config));
+    const normalizedHost = normalizeHostname(url.hostname);
+    const candidateKeys = getCandidateKeys(normalizedHost);
+    if (!candidateKeys.some((key) => normalizedChangedKeys.has(key))) continue;
+    const config = resolveConfig(normalizedHost, stored);
+    updates.push(updateTab(tab, normalizedHost, config));
   }
 
   await Promise.all(updates);
+}
+
+async function broadcastWindowFocus(windowId) {
+  try {
+    const stored = await ensureStoredConfigCache();
+    let focusedWindowId = chrome.windows.WINDOW_ID_NONE;
+    if (typeof windowId === 'number' && windowId !== chrome.windows.WINDOW_ID_NONE) {
+      const verified = await isWindowFocused(windowId);
+      if (verified) focusedWindowId = windowId;
+    }
+
+    const tabs = await chrome.tabs.query({ active: true });
+    const deliveries = [];
+    for (const tab of tabs) {
+      if (typeof tab.url !== 'string' || typeof tab.id !== 'number') continue;
+      let url;
+      try {
+        url = new URL(tab.url);
+      } catch (_error) {
+        continue;
+      }
+      if (!['http:', 'https:'].includes(url.protocol)) continue;
+      const normalizedHost = normalizeHostname(url.hostname);
+      const rawConfig = resolveConfig(normalizedHost, stored);
+      if (!rawConfig) continue;
+      const config = normalizeConfig(rawConfig);
+      if (!config.enabled || !config.windowStateEnabled) continue;
+
+      deliveries.push(sendTabMessage(tab.id, {
+        type: FOCUS_MESSAGE_TYPE,
+        hostname: normalizedHost,
+        focused: tab.windowId === focusedWindowId
+      }));
+    }
+    await Promise.all(deliveries);
+  } catch (_error) {
+    return;
+  }
 }
 
 async function ensureStoredConfigCache() {
@@ -183,6 +251,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   void enqueueSynchronization(changes);
 });
 
+if (chrome.windows?.onFocusChanged) {
+  chrome.windows.onFocusChanged.addListener((windowId) => {
+    void broadcastWindowFocus(windowId);
+  });
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== 'colorfulPwaGetResolvedConfig') return;
 
@@ -190,22 +264,27 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
     url = new URL(sender.url ?? sender.tab?.url ?? '');
   } catch (_error) {
-    sendResponse({ hostname: '', config: null });
+    sendResponse({ hostname: '', config: null, windowFocused: false });
     return;
   }
   if (!['http:', 'https:'].includes(url.protocol)) {
-    sendResponse({ hostname: '', config: null });
+    sendResponse({ hostname: '', config: null, windowFocused: false });
     return;
   }
 
+  const normalizedHost = normalizeHostname(url.hostname);
   void operationQueue
     .catch(() => {})
     .then(() => ensureStoredConfigCache())
-    .then((stored) => sendResponse({
-      hostname: url.hostname,
-      config: resolveConfig(url.hostname, stored)
-    }))
-    .catch(() => sendResponse({ hostname: url.hostname, config: null }));
+    .then(async (stored) => {
+      const windowFocused = await isWindowFocused(sender.tab?.windowId);
+      sendResponse({
+        hostname: normalizedHost,
+        config: resolveConfig(normalizedHost, stored),
+        windowFocused
+      });
+    })
+    .catch(() => sendResponse({ hostname: normalizedHost, config: null, windowFocused: false }));
   return true;
 });
 
