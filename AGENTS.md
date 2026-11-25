@@ -10,7 +10,7 @@
 JavaScript、HTML、CSS 与 Chrome Extension Manifest V3 API。
 
 ## 目录与约定
-扩展源码和 manifest 在 extension/；功能边界、设置继承规则与检查命令以 README.md 为准。
+扩展源码和 manifest 在 `extension/`（保持免构建直接加载）；零依赖静态检查与 `node:test` 单元测试位于 `tests/`，根目录 `package.json` 严禁引入外部依赖。功能边界、设置继承规则与检查命令以 `README.md` 为准。
 
 ## 当前状态与下一步
-优先保持弹窗与后台共用的站点配置解析逻辑；改动后按 README.md 的 Node 语法检查逐个核对相关脚本。
+保持 `extension/siteConfig.js` 作为弹窗、后台与内容脚本共用的纯逻辑层；所有改动需通过 `node tests/static-check.mjs` 与 `node --test tests/*.test.mjs` 验证，并在需要时于真实 Chromium PWA 窗口完成手工确认。
