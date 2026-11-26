@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/xxkingstuggle/tintpane/releases/latest">下载 Release (v2.4.0)</a> ·
+  <a href="https://github.com/xxkingstuggle/tintpane/releases/latest">下载最新 Release</a> ·
   <a href="https://myzjx.com/software/tintpane/">项目概览</a> ·
   <a href="https://myzjx.com/posts/tintpane-chromium-pwa-theme-engine/">工程手记</a> ·
   <a href="CHANGELOG.md">更新日志</a>
@@ -27,13 +27,14 @@
 |---|---|
 | 按需动态注册脚本 | 后台仅对用户显式启用的主机名调用 `chrome.scripting.registerContentScripts`，无启用项时零内容脚本驻留 |
 | 仅限 PWA 窗口生效 | 页面脚本先检测 `display-mode`，普通浏览器标签页或单纯全屏标签页立即退出，不读取配置、不挂载监听器 |
-| 跟随系统与焦点区分 | 支持 `prefers-color-scheme` 实时切换浅色/深色标题栏，可选为活动窗口（Focused）与非活动窗口（Blurred）分别指定配色 |
-| 域名树继承与别名同步 | 支持子域名继承父域设置、子域显式关闭覆盖父域，以及 `notebook.google` ⇄ `notebook.google.com` 双向别名同步 |
-| 无损所有权恢复 | 停用时仅恢复仍由扩展持有的 `theme-color` 节点修改，不覆盖站点自身后续改写的新值 |
+| 跟随系统与双源焦点感知 | 支持 `prefers-color-scheme` 实时切换浅色/深色标题栏；结合页面 `focus`/`blur`/`visibilitychange` 与后台 `chrome.windows.onFocusChanged` 精准区分活动与非活动窗口 |
+| SPA 抗覆盖与防循环熔断 | 通过 `MutationObserver` 监听 `document.head` 下的 `theme-color` 改写，具备重入锁、值幂等比对与 1 秒窗口速率熔断 |
+| 域名树继承与可视化管理 | 支持子域名继承父域设置、子域显式覆盖或一键恢复继承，以及 `notebook.google` ⇄ `notebook.google.com` 双向别名同步 |
+| 无损所有权恢复 | 停用时仅恢复仍由扩展持有的 `theme-color`（含 `media` 属性），不覆盖站点自身后续改写的新值 |
 
 ## 在 Chrome 中加载
 
-1. 从 [GitHub Releases (v2.4.0)](https://github.com/xxkingstuggle/tintpane/releases/tag/v2.4.0) 下载 `Tintpane-2.4.0.zip` 并解压（或直接克隆本仓库使用 `extension/` 目录）。
+1. 从 [GitHub Releases](https://github.com/xxkingstuggle/tintpane/releases/latest) 下载最新版本并解压，或直接克隆本仓库使用 `extension/` 目录。
 2. 打开 `chrome://extensions`，启用右上角“开发者模式”。
 3. 点击“加载已解压的扩展程序”，选择含有 `manifest.json` 的目录。
 
@@ -52,12 +53,15 @@
 
 ## 功能
 
+- 顶部拟真 macOS PWA 双态标题栏实时预览卡，展示活动/非活动交通灯状态、WCAG 对比度自适应标题色与 `#HEX · 等级` 徽章，跟随系统模式下可直接切换预览浅色/深色外观。
+- 域名继承链状态栏清晰标识「独立覆盖」「站点规则」「继承自父域」「别名同步」与「未配置」，支持一键「恢复继承」或「清除规则」。
+- 内置 6 套精选深浅双态配色预设与 `#HEX` 色值标签，底部可折叠面板集中查看或删除已配置站点规则，弹窗关闭（`pagehide`）时自动刷新未落盘的防抖保存。
 - “跟随系统”根据 `prefers-color-scheme` 选择浅色或深色配色，外观变化时无需刷新页面。
 - 后台只为明确启用的主机及其 Notebook 别名注册动态内容脚本，域名注册范围覆盖子域。明确关闭的子域仍可能落在已启用父域的注册范围内，但 PWA 页面脚本读取配置后会退出并清理监听，不应用颜色。没有任何启用配置时，不保留本扩展的动态内容脚本注册。
 - 只在 `standalone`、`minimal-ui` 或 `window-controls-overlay` 显示模式下应用配色。普通标签页只做显示模式检测后立即退出，不读取配置、不安装监听；单独进入全屏不会启用主题处理。
-- 可选择是否区分活动窗口和非活动窗口；关闭后使用统一颜色，不读取窗口焦点状态，也不监听焦点变化。
+- 可选择是否区分活动窗口和非活动窗口；开启后同时结合页面焦点事件与后台 `chrome.windows.onFocusChanged` 核验焦点窗口，关闭后使用统一颜色并停止监听。
 - 系统浅色和深色外观可分别设置颜色；启用窗口区分时，也可为活动和非活动窗口分别设置颜色。
-- 同时处理页面中按浅色/深色媒体条件声明的多条 `theme-color`，停用时恢复每条原始值。
+- 支持大小写不敏感匹配与多条带 `media` 属性的 `theme-color` 标签；若页面仅声明与当前外观不匹配的 `media` 标签，会自动补充无条件回退节点并在停用时清理。
 - “固定颜色”保留旧版设置，并同样支持是否区分窗口状态。
 - 旧版颜色设置继续使用固定模式；新网站默认跟随系统。
 - 关闭某网站时移除页面监听，并恢复扩展仍拥有的 `theme-color` 修改；如果页面已删除原标签或改写颜色，扩展不会把旧标签插回去或覆盖页面的新值。
@@ -70,18 +74,16 @@
 ## 使用边界
 
 - 仅配置 HTTP/HTTPS 页面，设置按主机名区分，不区分协议、端口或路径。动态注册支持普通域名、`localhost` 和 IPv4；不支持 IPv6 或其他单标签内网主机名。
-- 父级查找按点分隔逐级进行，只排除单标签后缀；没有使用公共后缀列表识别 `co.uk` 等多标签公共后缀，不应手工写入这类共享后缀配置。
-- 页面脚本在首次配置、设置变化、系统外观变化（跟随系统模式）和焦点变化（启用窗口区分）时更新颜色，没有监听 DOM 变化。网站之后新增或改写的 `theme-color` 不保证立即重新着色。
+- 父级查找按点分隔逐级进行，已排除 IPv4/IPv6/`localhost` 拆分与常见双标签公共后缀（如 `co.uk`、`com.cn`、`co.jp` 等），不包含完整 PSL 列表。
+- 页面脚本使用带重入锁和 1 秒速率熔断的 `MutationObserver` 守护 `document.head` 下的 `theme-color`；若目标站点在极短时间内高频覆写该节点，扩展会自动退避 250ms 后恢复，避免陷入 DOM 死循环。
 - 扩展声明 `storage`、`tabs`、`scripting` 以及所有 HTTP/HTTPS 网站的主机权限；页面脚本的动态注册仍按启用配置收窄。
 - 网站主机名和配色设置写入 `chrome.storage.sync`，由 Chrome 管理同步。
 
 ## 检查
 
 ```sh
-node --check extension/siteConfig.js
-node --check extension/background.js
-node --check extension/contentScript.js
-node --check extension/popup.js
+npm run check
+npm test
 ```
 
-以上只检查语法，不代表已在真实 PWA 中验收。行为改动后还应手动检查：普通标签页不着色；PWA 跟随系统切换颜色；窗口区分开关生效；子域明确关闭覆盖父域启用；Notebook 别名保存同步；停用后恢复仍由扩展持有的标签颜色。
+`npm run check`（`node tests/static-check.mjs`）校验 Manifest、全脚本语法、IIFE 封装与零危险 DOM API 约束；`npm test` 追加执行零依赖的 `node:test` 单元测试（覆盖域名解析、内容脚本 DOM/MutationObserver 熔断、后台脚本注册与焦点广播）。以上自动化验证不替代真实 Chromium PWA 窗口手工验收：行为改动后仍应在真实 PWA 中确认普通标签页不着色、系统浅深色切换、多窗口焦点变色、子域覆盖/恢复继承、Notebook 别名同步以及停用恢复表现。

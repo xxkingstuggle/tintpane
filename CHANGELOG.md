@@ -1,5 +1,15 @@
 # 更新记录
 
+## 2.5.0
+
+- **弹窗界面重塑**：新增顶部拟真 macOS PWA 双态标题栏实时预览卡（红黄绿/失焦灰交通灯、WCAG 对比度自适应标题色、`#HEX · 等级` 徽章与浅/深预览切换）、域名继承链来源胶囊与一键「恢复继承 / 清除规则」、6 套深浅双态精选配色预设、`#HEX` 色值标签以及原生 `<details>` 已配置站点折叠管理区。
+- **配置与存储可靠性**：`popup.js` 在 `pagehide`/`visibilitychange` 时自动 flush 防抖保存，监听 `chrome.storage.onChanged` 保持多视图同步，并在保存失败时回滚乐观状态；对不支持动态注册的主机名（如 IPv6、单标签内网名）给出明确不可配置提示。
+- **核心引擎加固**：
+  - `siteConfig.js` 全程 IIFE 封装，修复 IPv4 被拆分祖先域名的边界缺陷，屏蔽常见双标签公共后缀（如 `co.uk`、`com.cn`），补充颜色格式清洗与 WCAG 对比度/预设匹配工具。
+  - `background.js` 统一 `CONTENT_FILES = ['siteConfig.js', 'contentScript.js']` 用于注册与动态注入，新增 `chrome.windows.onFocusChanged` 焦点核验与跨窗口广播。
+  - `contentScript.js` 实现幂等重入刷新、扩展上下文失效自动卸载、等待延迟挂载的 `document.head`、大小写不敏感及单 `media` 条件回退 `theme-color` 处理，以及带重入锁和 1 秒速率熔断的 `MutationObserver` SPA 抗覆盖机制。
+- **零依赖测试与静态门禁**：新增 `package.json`（零外部依赖）、`tests/static-check.mjs` 与 `node:test` 单元测试套件（`siteConfig.test.mjs`、`contentScript.test.mjs`、`background.test.mjs`）。
+
 ## 2.4.0
 
 - 更名为 Tintpane，换用玻璃窗口图标。

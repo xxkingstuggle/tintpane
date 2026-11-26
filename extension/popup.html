@@ -8,29 +8,97 @@
   </head>
   <body>
     <main>
-      <header class="brand">
-        <img src="icons/tintpane-128.png" width="44" height="44" alt="">
-        <div>
-          <h1>Tintpane</h1>
-          <p>PWA 窗口配色</p>
+      <header class="brand-bar">
+        <div class="brand">
+          <img src="icons/tintpane-128.png" width="34" height="34" alt="">
+          <div>
+            <h1>Tintpane</h1>
+            <p>PWA 标题栏染色</p>
+          </div>
         </div>
+        <span id="live-pill" class="live-pill" data-state="inactive">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="live-pill-text">读取中</span>
+        </span>
       </header>
 
-      <div class="panel settings">
+      <section class="panel preview-card" aria-label="标题栏实时预览">
+        <div class="card-head">
+          <span class="card-title">标题栏预览</span>
+          <div id="preview-scheme-toggle" class="mini-segment" role="group" aria-label="预览外观">
+            <button type="button" class="mini-segment-btn" data-preview-scheme="light" aria-pressed="false">浅色</button>
+            <button type="button" class="mini-segment-btn" data-preview-scheme="dark" aria-pressed="false">深色</button>
+          </div>
+          <span id="preview-fixed-tag" class="meta-chip hidden">固定配色</span>
+        </div>
+
+        <div id="preview-stage" class="preview-stage" data-scheme="light">
+          <div id="preview-active" class="mock-window is-active">
+            <div id="preview-active-bar" class="mock-titlebar">
+              <span class="traffic-lights" aria-hidden="true">
+                <span class="tl tl-close"></span>
+                <span class="tl tl-min"></span>
+                <span class="tl tl-max"></span>
+              </span>
+              <span class="mock-title-wrap">
+                <span id="preview-active-title" class="mock-title">Tintpane PWA</span>
+                <span id="preview-active-role" class="mock-role">统一</span>
+              </span>
+              <span id="preview-active-badge" class="contrast-chip">#FFFFFF · AAA</span>
+            </div>
+            <div class="mock-body" aria-hidden="true">
+              <span class="mock-line mock-line-wide"></span>
+              <span class="mock-line mock-line-short"></span>
+            </div>
+          </div>
+
+          <div id="preview-inactive" class="mock-window is-inactive hidden">
+            <div id="preview-inactive-bar" class="mock-titlebar">
+              <span class="traffic-lights is-muted" aria-hidden="true">
+                <span class="tl"></span>
+                <span class="tl"></span>
+                <span class="tl"></span>
+              </span>
+              <span class="mock-title-wrap">
+                <span id="preview-inactive-title" class="mock-title">Tintpane PWA</span>
+                <span class="mock-role">非活动</span>
+              </span>
+              <span id="preview-inactive-badge" class="contrast-chip">#D3D3D3 · AAA</span>
+            </div>
+            <div class="mock-body" aria-hidden="true">
+              <span class="mock-line mock-line-mid"></span>
+            </div>
+          </div>
+
+          <p id="preview-disabled-note" class="preview-note hidden">当前站点未启用 · 预览效果</p>
+        </div>
+      </section>
+
+      <div id="site-controls" class="panel settings">
         <section aria-label="网站设置">
           <label class="preference-row" for="enabled">
-            <span>
-              <span id="enabled-label">启用此网站</span>
+            <span class="preference-copy">
+              <span id="enabled-label" class="preference-title">启用此网站</span>
               <span id="site-name">正在读取当前网站…</span>
             </span>
             <input class="switch" id="enabled" type="checkbox" role="switch"
               aria-labelledby="enabled-label" aria-describedby="site-name" disabled>
           </label>
+
+          <div id="inheritance-bar" class="inheritance-bar">
+            <div class="inheritance-info">
+              <span id="source-badge" class="source-badge" data-source="none">未配置</span>
+              <span id="source-detail" class="source-detail">等待读取站点规则…</span>
+            </div>
+            <button type="button" id="reset-rule-btn" class="ghost-btn hidden">恢复继承</button>
+          </div>
+
           <label class="preference-row" for="window-state-enabled">
-            <span>区分活动与非活动窗口</span>
+            <span class="preference-title">区分活动与非活动窗口</span>
             <input class="switch" id="window-state-enabled" type="checkbox" role="switch" disabled>
           </label>
         </section>
+
         <fieldset class="mode-panel">
           <legend>颜色模式</legend>
           <div class="mode-switch">
@@ -46,27 +114,47 @@
         </fieldset>
       </div>
 
+      <section class="panel presets-panel" aria-label="快速配色预设">
+        <div class="card-head">
+          <span class="card-title">精选配色</span>
+          <span id="preset-hint" class="meta-text">自定义</span>
+        </div>
+        <div id="presets-grid" class="presets-grid" role="group" aria-label="预设色板"></div>
+      </section>
+
       <section id="system-colors" class="panel palette-grid" aria-label="系统配色">
         <div class="palette" role="group" aria-labelledby="light-title">
-          <h2 id="light-title">浅色</h2>
+          <h2 id="light-title">浅色外观</h2>
           <label class="color-row" for="light-active-color">
             <span id="light-active-label">统一颜色</span>
-            <input id="light-active-color" type="color" value="#ffffff" disabled>
+            <span class="color-control">
+              <code id="light-active-color-hex" class="hex-tag">#FFFFFF</code>
+              <input id="light-active-color" type="color" value="#ffffff" disabled>
+            </span>
           </label>
           <label class="color-row window-state-specific hidden" for="light-inactive-color">
             <span>非活动窗口</span>
-            <input id="light-inactive-color" type="color" value="#d3d3d3" disabled>
+            <span class="color-control">
+              <code id="light-inactive-color-hex" class="hex-tag">#D3D3D3</code>
+              <input id="light-inactive-color" type="color" value="#d3d3d3" disabled>
+            </span>
           </label>
         </div>
         <div class="palette" role="group" aria-labelledby="dark-title">
-          <h2 id="dark-title">深色</h2>
+          <h2 id="dark-title">深色外观</h2>
           <label class="color-row" for="dark-active-color">
             <span id="dark-active-label">统一颜色</span>
-            <input id="dark-active-color" type="color" value="#202124" disabled>
+            <span class="color-control">
+              <code id="dark-active-color-hex" class="hex-tag">#202124</code>
+              <input id="dark-active-color" type="color" value="#202124" disabled>
+            </span>
           </label>
           <label class="color-row window-state-specific hidden" for="dark-inactive-color">
             <span>非活动窗口</span>
-            <input id="dark-inactive-color" type="color" value="#303134" disabled>
+            <span class="color-control">
+              <code id="dark-inactive-color-hex" class="hex-tag">#303134</code>
+              <input id="dark-inactive-color" type="color" value="#303134" disabled>
+            </span>
           </label>
         </div>
       </section>
@@ -74,18 +162,41 @@
       <section id="fixed-colors" class="panel palette hidden" aria-label="固定配色">
         <label class="color-row" for="active-color">
           <span id="active-label">统一颜色</span>
-          <input id="active-color" type="color" value="#ffffff" disabled>
+          <span class="color-control">
+            <code id="active-color-hex" class="hex-tag">#FFFFFF</code>
+            <input id="active-color" type="color" value="#ffffff" disabled>
+          </span>
         </label>
         <label class="color-row window-state-specific hidden" for="inactive-color">
           <span>非活动窗口</span>
-          <input id="inactive-color" type="color" value="#d3d3d3" disabled>
+          <span class="color-control">
+            <code id="inactive-color-hex" class="hex-tag">#D3D3D3</code>
+            <input id="inactive-color" type="color" value="#d3d3d3" disabled>
+          </span>
         </label>
       </section>
+
+      <details id="sites-panel" class="panel sites-panel">
+        <summary class="sites-summary">
+          <span class="sites-summary-title">已配置站点</span>
+          <span class="sites-summary-right">
+            <span id="sites-count" class="count-pill">0</span>
+            <span class="chevron" aria-hidden="true"></span>
+          </span>
+        </summary>
+        <div id="sites-list" class="sites-list"></div>
+      </details>
 
       <footer>
         <p id="appearance" class="hidden"></p>
         <p id="status" role="status"></p>
       </footer>
+
+      <div class="brand-footer" aria-label="关于 Tintpane">
+        <span class="brand-credit">by <a class="brand-link" href="https://github.com/xxkingstuggle" target="_blank" rel="noopener noreferrer">@xxkingstuggle</a></span>
+        <span class="brand-sep" aria-hidden="true">·</span>
+        <a class="brand-link" href="https://myzjx.com/software/tintpane/" target="_blank" rel="noopener noreferrer">myzjx.com</a>
+      </div>
     </main>
     <script src="siteConfig.js"></script>
     <script src="popup.js"></script>
