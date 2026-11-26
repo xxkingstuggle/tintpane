@@ -3,6 +3,8 @@
   "name": "Tintpane",
   "version": "2.5.0",
   "description": "为每个 PWA 网站设置标题栏颜色，可跟随系统外观并区分活动窗口。",
+  "author": "Xin (@xxkingstuggle)",
+  "homepage_url": "https://myzjx.com/software/tintpane/",
   "permissions": [
     "storage",
     "tabs",
